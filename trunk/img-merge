@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+'''
+Example:
+
+    ./img-merge ~somsak_sr/work/povray/mini_demo/'mini_demo_*.png' demo.png
+'''
+
+import re
+
+def open_ppm(path):
+    f = open(path,'rb')
+    for i in range(3):
+        f.readline()
+    return f
+
+class Application:
+
+    coord_cre = re.compile(r'_(\d+)_(\d+)_(\d+)_(\d+)\.\w+$')
+
+    def __init__(self):
+        self.parse_args()
+
+    def parse_args(self):
+        pass
+
+    def extract_coord(self,path):
+        m = self.coord_cre.search(path)
+        coord = m.groups()
+        return tuple(map(int,coord))
+
+    def process(self):
+        import os,glob
+        import Image
+
+        output = Image.new('RGB',(self.width,self.height))
+        for path in glob.glob(self.inputpattern):
+            try:
+                obox = self.extract_coord(path)
+                #input = Image.open(path)
+                size = self.width,obox[3]-obox[1]
+                #input = Image.fromstring('RGB',size,open_ppm(path).read())
+                input = Image.open(path)
+                if os.path.splitext(path)[1] == '.tga' :
+                    input.size = size
+                input.load()
+                ibox = obox[0],0,obox[2],size[1]
+                print path
+                print input.format,input.size,input.mode
+                print ibox,obox
+                region = input.crop(ibox)
+                output.paste(region,obox)
+                #output.paste(input,box)
+            except IOError,why:
+                print why
+                import traceback
+                traceback.print_exc()
+
+        return output
+
+    def run(self):
+        output = self.process()
+        output.save(self.outputfile)
+
+class CLIApp(Application):
+    def parse_args(self):
+        from optparse import OptionParser
+
+        parser = OptionParser(usage='usage: %prog [options] input-pattern output-file',add_help_option=0)
+        parser.add_option('-w','--width',dest='width',type='int',
+                          help='specify width',default='1024')
+        parser.add_option('-h','--height',dest='height',type='int',
+                          help='specify height',default='768')
+        options,args = parser.parse_args()
+        if len(args) != 2:
+            parser.print_help()
+            import sys
+            sys.exit(-1)
+
+        self.width = int(options.width)
+        self.height = int(options.height)
+        self.inputpattern,self.outputfile = args
+
+class CGIApp(Application):
+    def parse_args(self):
+        import cgi
+
+        form = cgi.FieldStorage()
+        self.width = int(form.getfirst('width','1024'))
+        self.height = int(form.getfirst('height','768'))
+        self.inputpattern = form.getfirst('pattern','')
+
+    def run(self):
+        from cStringIO import StringIO
+
+        output = self.process()
+        f = StringIO()
+        output.save(f,'PNG')
+        print "Content-type: image/png\n"
+        f.seek(0)
+        print f.read(),
+
+if __name__ == '__main__':
+    import os
+
+    if 'QUERY_STRING' in os.environ:
+        app = CGIApp()
+    else:
+        app = CLIApp()
+    app.run()
