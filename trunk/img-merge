@@ -5,7 +5,9 @@ Example:
     ./img-merge ~somsak_sr/work/povray/mini_demo/'mini_demo_*.png' demo.png
 '''
 
-import re
+import re, os
+
+BASEDIR="/fs/home/somsak_sr/work/povray"
 
 def open_ppm(path):
     f = open(path,'rb')
@@ -44,16 +46,16 @@ class Application:
                     input.size = size
                 input.load()
                 ibox = obox[0],0,obox[2],size[1]
-                print path
-                print input.format,input.size,input.mode
-                print ibox,obox
+                #print path
+                #print input.format,input.size,input.mode
+                #print ibox,obox
                 region = input.crop(ibox)
                 output.paste(region,obox)
                 #output.paste(input,box)
-            except IOError,why:
-                print why
+            except Exception,why:
+                #print why
                 import traceback
-                traceback.print_exc()
+                #traceback.print_exc()
 
         return output
 
@@ -85,11 +87,14 @@ class CGIApp(Application):
         import cgi
 
         form = cgi.FieldStorage()
+        self.mode = form.getfirst('mode','image')
         self.width = int(form.getfirst('width','1024'))
         self.height = int(form.getfirst('height','768'))
+        self.delay = int(form.getfirst('delay','1'))
         self.inputpattern = form.getfirst('pattern','')
+        self.inputpattern = os.path.join(BASEDIR,self.inputpattern)
 
-    def run(self):
+    def run_image(self):
         from cStringIO import StringIO
 
         output = self.process()
@@ -98,6 +103,22 @@ class CGIApp(Application):
         print "Content-type: image/png\n"
         f.seek(0)
         print f.read(),
+
+    def run_html(self):
+        url = '%s?width=%d&height=%d&pattern=%s' % (os.environ['SCRIPT_NAME'],self.width,self.height,self.inputpattern)
+        print "Content-type: text/html\n"
+        print '''<html>
+<head>
+<meta http-equiv="refresh" content="%s">
+</head>
+<body>
+<img src="%s">
+</body>
+</html''' % (self.delay,url)
+
+    def run(self):
+        f = getattr(self,'run_'+self.mode,self.run_html)
+        f()
 
 if __name__ == '__main__':
     import os
