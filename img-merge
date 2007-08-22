@@ -112,6 +112,7 @@ class CGIApp(Application):
 <meta http-equiv="refresh" content="%s">
 </head>
 <body>
+<h2>Parallel rendering</h2>
 <img src="%s">
 </body>
 </html''' % (self.delay,url)

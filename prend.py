@@ -33,7 +33,7 @@ def data_segment(width, height, nnodes) :
         wp = b
     height_piece = height / hp
     width_piece = width / wp
-    if height_piece == 0 or width_piece == 0 :
+    if (height_piece == 0) or (width_piece == 0) :
         hp = nnodes
         wp = 0
         height_piece = height / hp
@@ -42,10 +42,15 @@ def data_segment(width, height, nnodes) :
     result = []
     begin_x = 0
     begin_y = 0
+    print height_piece, width_piece
     if (height % height_piece) != 0 :
         max_height = height_piece * (hp + 1)
+    else : 
+        max_height = height
     if (width % width_piece) != 0 :
         max_width = width_piece * (wp + 1)
+    else :
+        max_width = width
 
     #print 'max_height = %d' % max_height
     #print 'max_width = %d' % max_width
@@ -113,6 +118,7 @@ povray %(pov_args)s +SC%(start_x)d +EC%(end_x)d +SR%(start_y)d +ER%(end_y)d
 #$ -j y 
 #$ -o %(img_name)s_merge.out
 #$ -N %(img_name)s_merge
+# $ -q exclusive.q
 
 ~/work/prender/img-merge -w %(width)s -h %(height)s %(pattern)s %(output)s
 '''
@@ -144,4 +150,4 @@ povray %(pov_args)s +SC%(start_x)d +EC%(end_x)d +SR%(start_y)d +ER%(end_y)d
     output_path = output_path.replace('/fs/home/somsak_sr/work/povray/', '')
     name, ext = os.path.splitext(output_path)
     output_path = name + '_*' + ext
-    os.system('/usr/bin/firefox "http://tera.thaigrid.or.th/~somsak_sr/cgi-bin/img-merge.cgi?delay=5&mode=html&pattern=%s&width=%d&height=%d"' % (output_path, img_data['width'], img_data['height']))
+    os.system('/usr/bin/firefox "http://tera.thaigrid.or.th/~somsak_sr/cgi-bin/img-merge.cgi?delay=7&mode=html&pattern=%s&width=%d&height=%d"' % (output_path, img_data['width'], img_data['height']))
