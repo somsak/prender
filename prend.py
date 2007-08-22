@@ -31,14 +31,13 @@ def data_segment(width, height, nnodes) :
     else :
         hp = a
         wp = b
-    if hp >= height :
-        height_piece = 1
-    else :
+    height_piece = height / hp
+    width_piece = width / wp
+    if height_piece == 0 or width_piece == 0 :
+        hp = nnodes
+        wp = 0
         height_piece = height / hp
-    if wp >= width :
-        width_piece = 1
-    else :
-        width_piece = width / wp
+        width_piece = width
 
     result = []
     begin_x = 0
