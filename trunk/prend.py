@@ -42,7 +42,6 @@ def data_segment(width, height, nnodes) :
     result = []
     begin_x = 0
     begin_y = 0
-    print height_piece, width_piece
     if (height % height_piece) != 0 :
         max_height = height_piece * (hp + 1)
     else : 
@@ -108,6 +107,7 @@ if __name__ == '__main__' :
 #$ -j y
 #$ -o %(img_name)s.out
 #$ -N %(img_name)s
+# $ -q exclusive.q
 
 povray %(pov_args)s +SC%(start_x)d +EC%(end_x)d +SR%(start_y)d +ER%(end_y)d
 '''
@@ -118,9 +118,10 @@ povray %(pov_args)s +SC%(start_x)d +EC%(end_x)d +SR%(start_y)d +ER%(end_y)d
 #$ -j y 
 #$ -o %(img_name)s_merge.out
 #$ -N %(img_name)s_merge
-# $ -q exclusive.q
+#$ -hold_jid %(jid_list)s
 
-~/work/prender/img-merge -w %(width)s -h %(height)s %(pattern)s %(output)s
+set -x
+~/work/prender/img-merge -w%(width)s -h%(height)s %(pattern)s %(output)s
 '''
 
     nnodes = int(sys.argv[1])
@@ -146,8 +147,20 @@ povray %(pov_args)s +SC%(start_x)d +EC%(end_x)d +SR%(start_y)d +ER%(end_y)d
         print output,
         qsub_stdout.close()
 
+    qsub_stdin, qsub_stdout = os.popen2('qsub')
     output_path = os.path.join(os.getcwd(), img_data['out'])
-    output_path = output_path.replace('/fs/home/somsak_sr/work/povray/', '')
     name, ext = os.path.splitext(output_path)
+    output_path = name + '_\*' + ext
+    args = {'img_name': img_data['out'] + '-merge',
+            'width': img_data['width'], 'height': img_data['height'],
+            'pattern': output_path, 'output': img_data['out'],
+            'jid_list': ','.join(jid_list)
+            }
+    qsub_stdin.write(merger_scr % args)
+    qsub_stdin.close()
+    print qsub_stdout.read(),
+    qsub_stdout.close()
     output_path = name + '_*' + ext
+    output_path = output_path.replace('/fs/home/somsak_sr/work/povray/', '')
+
     os.system('/usr/bin/firefox "http://tera.thaigrid.or.th/~somsak_sr/cgi-bin/img-merge.cgi?delay=7&mode=html&pattern=%s&width=%d&height=%d"' % (output_path, img_data['width'], img_data['height']))
